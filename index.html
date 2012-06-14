@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang='en' xml:lang='en' xmlns:og='http://ogp.me/ns#' xmlns='http://www.w3.org/1999/xhtml'>
+  <head>
+    <title>Sandbox That Ad</title>
+    <meta charset='UTF-8' />
+    <link href='humans.txt' rel='author' />
+
+    <link href='http://fonts.googleapis.com/css?family=Codystar' rel='stylesheet' type='text/css'>
+    <link href='http://fonts.googleapis.com/css?family=Raleway:100' rel='stylesheet' type='text/css'>
+
+    <link rel="stylesheet" href="stylesheets/screen.css" type="text/css" media="screen, projection">
+    <link rel="stylesheet" href="stylesheets/style.css" type="text/css" media="screen, projection">
+
+    <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
+    <script type="text/javascript" src="https://caja.appspot.com/caja.js"></script>
+    <script src="javascripts/writeCapture.js" type="text/javascript"></script>
+    <script src="javascripts/jquery.writeCapture.js" type="text/javascript"></script>
+    <script src="javascripts/time.js" type="text/javascript"></script>
+
+    <script type="text/javascript">
+      caja.initialize({
+        cajaServer: 'https://caja.appspot.com/',
+        debug: true
+      });
+
+      var secureUriPolicy = {
+        rewrite: function(uri) {
+          result = uri.replace(/^http:/, 'https:');
+
+          rewritten = ( uri != result ) ? true : false
+          log_request(result, isSecure(uri), rewritten);
+
+          return result;
+        }
+      }
+
+      var permissiveUriPolicy = {
+        rewrite: function(uri) {
+          log_request(uri, isSecure(uri), false);
+          return uri;
+        }
+      }
+
+      function isSecure(uri) {
+        secure = ( /^https:/.test(uri) ) ? true : false
+        return(secure);
+      }
+
+      function ad_uri(){
+        var ord = Math.random()*10000000000000000;
+        return('https://ad.doubleclick.net/adj/mlg/home;s1=home;pos=top;tile=1;dcopt=ist;mtfInline=true;sz=728x90;ord=' + ord + '?');
+      }
+
+      function get_ad(){
+        time.start('ad');
+        $('#log table tbody').empty();
+        $('#log').hide();
+        $('#top_ad_sandbox').writeCapture().html(
+          '<div id="ad"><script src="' + ad_uri() + '"><\/script></div>', { done: function(){
+            $('#spinner').hide();
+            time.stop('ad')
+            time.report('ad');
+          }
+        });
+      }
+
+      function sandbox_ad(uriPolicy){
+        time.start('ad');
+        $('#log').show();
+        $('#log table tbody, #top_ad_sandbox').empty()
+        caja.load(document.getElementById('top_ad_sandbox'), uriPolicy, function(frame) {
+          frame.code( ad_uri(), 'text/javascript' ).run( function(f){
+            $('#spinner').hide();
+            time.stop('ad')
+            time.report('ad');
+          });
+        });
+      }
+
+      function log_timing(r){
+        $('#timer').text('Finished loading ' + r[0]);
+      }
+
+      function log_request(uri, secure, rewritten){
+        uri = '<a target="_network" href="' + uri + '">' + uri.substring(0, 100) + '...';
+        secure = ( secure ) ? '<div class="true"></div>' : '<div class="false"></div>';
+        rewritten = ( rewritten ) ? '<div class="true"></div>' : '<div class="false"></div>';
+        $('#log tbody').append('<tr>' +
+          '<td>' + uri + '</td>' +
+          '<td class="secure">' + secure + '</td>' +
+          '<td class="rewritten">' + rewritten + '</td>' +
+        '/tr>');
+      }
+
+      $(document).ready(function(){
+        time.setReportMethod(log_timing);
+
+        $('#get_ad').click(function(){
+          $('#spinner').show();
+          get_ad();
+        });
+
+        $('#sandbox_http_ad').click(function(){
+          $('#spinner').show();
+          sandbox_ad(permissiveUriPolicy);
+        });
+
+        $('#sandbox_https_ad').click(function(){
+          $('#spinner').show();
+          sandbox_ad(secureUriPolicy);
+        });
+
+        sandbox_ad(secureUriPolicy);
+
+      });
+    </script>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <blockquote>
+          <span>The Caja Compiler is a tool for making third party HTML, CSS and JavaScript safe to embed in your website.</span> - <a href="https://developers.google.com/caja/docs/about/">About Caja</a>
+        </blockquote>
+        <h1>Sandbox that ad</h1>
+        <p>When you let advertisers inject <span class="important">untrusted JavaScript</span> into your site, they will try to</p>
+      </div>
+
+      <div id="intro" class="prefix-4 span-16 suffix-4">
+        <ul>
+          <li>Inspect your visitors' browsing history</li>
+          <li>Redirect the window away from your site</li>
+          <li><span class="highlight">Prevent you from using SSL</span></li>
+          <li>Steal your cookies</li>
+          <li>Make their bugs your problem</li>
+        </ul>
+      </div>
+
+      <div id="solution">
+        <h3>Sandbox it with <a href="https://developers.google.com/caja/">Google Caja</a></h3>
+        <script src="http://gist.github.com/2927868.js"></script>
+      </div>
+
+      <div id="demo">
+        <h3>Try it</h3>
+        <div class="controls">
+          <button id="get_ad"><img src="images/fate.png" /> Trust a random ad</button>
+          <button id="sandbox_http_ad"><img src="images/sandbox.png" /> Sandbox a random ad</button>
+          <button id="sandbox_https_ad"><img src="images/https.png" /> Sandbox and force HTTPS</button>
+          <br />
+        </div>
+
+        <div class="clear"></div>
+
+        <div id="spinner">
+          <img src="images/spinner.gif" alt="Loading ad..." />
+        </div>
+
+        <div id="top_ad_sandbox"></div>
+        <div id="timer"></div>
+      </div>
+
+      <div id="log" class="span-24">
+        <h3>Network Log</h3>
+        <table border="0" cellspacing="0" cellpadding="0">
+          <thead>
+            <tr>
+              <th class="span-20">Modified URI</th>
+              <th class="span-2">HTTP?</th>
+              <th class="span-2">Rewritten?</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+
+      <div id="footer">
+        <p>A public service announcement brought to you by <a href="http://logankoester.com">Logan Koester</a> for <a href="http://agoragames.com">Agora Games</a> / <a href="http://majorleaguegaming.com">Major League Gaming</a></p>
+      </div>
+
+    </div>
+  </body>
+</html>

@@ -1,0 +1,5 @@
+/* TEAM */
+  Software Engineer: Logan Koester
+  Contact: logan@logankoester.com
+  Twitter: @logankoester
+  Location: Troy, New York, United States.
